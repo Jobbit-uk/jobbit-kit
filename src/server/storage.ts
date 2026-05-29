@@ -46,6 +46,15 @@ export interface DownloadUrlResult {
   expires_in?: number | null;
 }
 
+export interface StorageUsageResult {
+  owner_id: string;
+  app_id: string;
+  tier: string;
+  limits: Record<string, number | string>;
+  owner_usage: Record<string, unknown>;
+  app_usage: Record<string, unknown>;
+}
+
 function toBlob(file: UploadFileInput["file"]): Blob | string {
   if (typeof file === "string") return file;
   if (file instanceof Blob) return file;
@@ -99,6 +108,13 @@ export function createStorageClient(options: StorageClientOptions = {}) {
         headers: bearerHeaders(apiKey)
       });
       return parseResponse<DownloadUrlResult>(response, "jobbit-s3");
+    },
+
+    async getUsage(): Promise<StorageUsageResult> {
+      const response = await fetchImpl(`${baseUrl}/v1/usage`, {
+        headers: bearerHeaders(apiKey)
+      });
+      return parseResponse<StorageUsageResult>(response, "jobbit-s3");
     },
 
     async deleteFile(fileId: string): Promise<{ ok: boolean }> {

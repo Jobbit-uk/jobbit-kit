@@ -5,7 +5,7 @@ TypeScript SDK for Jobbit managed services. Generated apps should use this packa
 ## Install from Git
 
 ```bash
-npm install git+ssh://git@gitlab.com:ai-workspace/jobbit-kit.git
+npm install git+https://github.com/Jobbit-uk/jobbit-kit.git
 ```
 
 ## Managed Env
@@ -37,6 +37,7 @@ NEXT_PUBLIC_JOBBIT_APP_TIER=free
 NEXT_PUBLIC_JOBBIT_BADGE_ENABLED=true
 NEXT_PUBLIC_JOBBIT_BADGE_VARIANT=free-host
 NEXT_PUBLIC_JOBBIT_APP_URL=https://my-app.apps.jobbit.uk
+NEXT_PUBLIC_JOBBIT_FREE_HOST_EXPIRES_AT=2026-06-05T12:00:00Z
 ```
 
 Never expose server keys to browser code. Browser modules only use `NEXT_PUBLIC_*`.
@@ -75,12 +76,14 @@ import { createEmailVerificationUrl } from "@jobbit/kit/next";
 const mail = createMailClient();
 const verifyUrl = createEmailVerificationUrl("token_123");
 
-await mail.sendMessage({
+const sent = await mail.sendMessage({
   to: "user@example.com",
   subject: "Verify your email",
   html: `<a href="${verifyUrl}">Verify email</a>`,
   text: `Verify your email: ${verifyUrl}`
 });
+
+const status = await mail.getMessage(sent.id);
 ```
 
 Do not pass `from`. Jobbit Mail resolves the correct sender from managed domain settings.
@@ -104,6 +107,7 @@ import { createStorageClient } from "@jobbit/kit/server/storage";
 
 const storage = createStorageClient();
 const files = await storage.listFiles({ visibility: "public" });
+const usage = await storage.getUsage();
 ```
 
 ## AI Router
@@ -117,7 +121,40 @@ const completion = await ai.chatCompletions({
   model: "gpt-4.1-mini",
   messages: [{ role: "user", content: "Write a short welcome message." }]
 });
+
+const imageModels = await ai.listImageModels();
+
+const image = await ai.imageGenerations({
+  model: imageModels.data[0]?.id,
+  prompt: "a clean product icon"
+});
+
+const voices = await ai.listAudioVoices({ model: "openai/gpt-4o-mini-tts" });
+
+const wav = await ai.audioSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Welcome to Jobbit.",
+  voice: String(voices.voices[0] ?? "alloy"),
+  response_format: "wav"
+});
+
+const transcript = await ai.audioTranscriptions({
+  model: "openai/whisper-1",
+  input_audio: { data: "base64-audio", format: "wav" }
+});
 ```
+
+Discovery helpers are available for capability-aware apps:
+
+```ts
+await ai.listModels({ output: "text" });
+await ai.listAudioModels({ kind: "tts" });
+await ai.listAudioModels({ kind: "stt" });
+await ai.listAudioVoices({ model: "openai/gpt-4o-mini-tts" });
+await ai.listImageModels();
+```
+
+For non-standard OpenAI-compatible routes, use `ai.get()`, `ai.post()`, or `ai.raw()` instead of hand-rolling headers.
 
 ## Analytics and Badge
 
@@ -139,8 +176,11 @@ For plain browser apps:
 ```ts
 import { initJobbitAnalytics, mountJobbitBadge } from "@jobbit/kit/browser";
 
-initJobbitAnalytics();
+const analytics = initJobbitAnalytics();
+analytics.track("signup_started", { source: "hero" });
 mountJobbitBadge();
 ```
 
-Badge rendering is app-level code. It does not use iframe wrappers, `?jb=1`, or proxy HTML injection.
+Analytics loads the official tracker script from `NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT + "/t.js"` and buffers custom `track()` calls until it is ready.
+
+The `free-host` badge is a top app banner styled like the old Jobbit proxy banner: Jobbit wordmark, free-host expiry copy, upgrade pills, and CTA. It only renders when `NEXT_PUBLIC_JOBBIT_BADGE_ENABLED=true` and `NEXT_PUBLIC_JOBBIT_APP_TIER=free`.

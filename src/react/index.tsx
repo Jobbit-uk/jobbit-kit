@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import { initJobbitAnalytics, type AnalyticsOptions } from "../browser/analytics";
 import { mountJobbitBadge, shouldShowJobbitBadge, type BadgeOptions } from "../browser/badge";
@@ -12,7 +14,7 @@ export function JobbitAnalytics(props: AnalyticsOptions): null {
 export function JobbitBadge(props: BadgeOptions): null {
   useEffect(() => {
     mountJobbitBadge(props);
-  }, [props.enabled, props.tier, props.appUrl, props.mount]);
+  }, [props.enabled, props.tier, props.appUrl, props.upgradeUrl, props.expiresAt, props.variant, props.mount]);
   return null;
 }
 

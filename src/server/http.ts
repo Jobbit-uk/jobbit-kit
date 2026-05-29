@@ -27,3 +27,13 @@ export function bearerHeaders(apiKey: string, extra?: HeadersInit): Headers {
   headers.set("Authorization", `Bearer ${apiKey}`);
   return headers;
 }
+
+export function queryUrl(base: string, params?: Record<string, string | number | boolean | undefined | null>): URL {
+  const url = new URL(base);
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  }
+  return url;
+}

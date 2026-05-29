@@ -10,135 +10,95 @@ export interface TrackEventOptions {
   props?: Record<string, unknown>;
 }
 
-const SESSION_KEY = "jba_s";
-const VISITOR_KEY = "jba_v";
-const SESSION_TTL = 30 * 60 * 1000;
+type QueuedEvent = [string, Record<string, unknown> | undefined];
+
+declare global {
+  interface Window {
+    jba?: {
+      track?: (name: string, props?: Record<string, unknown>) => void;
+      setRoute?: (route: string) => void;
+    };
+    __jobbitAnalyticsQueue?: QueuedEvent[];
+  }
+}
+
+const SCRIPT_ATTR = "data-jobbit-analytics";
 
 function publicEnv(key: string): string | undefined {
+  const direct: Record<string, string | undefined> = {
+    NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT:
+      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT : undefined,
+    NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID:
+      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID : undefined,
+    NEXT_PUBLIC_JOBBIT_APP_ID: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_ID : undefined
+  };
   const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  return env?.[key];
+  return direct[key] ?? env?.[key];
 }
 
-function randomId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-}
-
-function storageGet(key: string): string | undefined {
-  try {
-    return localStorage.getItem(key) ?? undefined;
-  } catch {
-    return undefined;
+function flushQueue() {
+  const queue = window.__jobbitAnalyticsQueue ?? [];
+  if (!window.jba?.track || queue.length === 0) return;
+  window.__jobbitAnalyticsQueue = [];
+  for (const [name, props] of queue) {
+    window.jba.track(name, props);
   }
 }
 
-function storageSet(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // ignored
+function queueOrTrack(name: string, props?: Record<string, unknown>) {
+  if (window.jba?.track) {
+    window.jba.track(name, props);
+    return;
   }
-}
-
-function getVisitorId(): string {
-  const existing = storageGet(VISITOR_KEY);
-  if (existing) return existing;
-  const id = randomId();
-  storageSet(VISITOR_KEY, id);
-  return id;
-}
-
-function getSessionId(): string {
-  const raw = storageGet(SESSION_KEY);
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as { id: string; t: number };
-      if (Date.now() - parsed.t < SESSION_TTL) {
-        storageSet(SESSION_KEY, JSON.stringify({ id: parsed.id, t: Date.now() }));
-        return parsed.id;
-      }
-    } catch {
-      // ignored
-    }
-  }
-  const id = randomId();
-  storageSet(SESSION_KEY, JSON.stringify({ id, t: Date.now() }));
-  return id;
-}
-
-function timezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
-  } catch {
-    return "";
-  }
+  window.__jobbitAnalyticsQueue = window.__jobbitAnalyticsQueue ?? [];
+  window.__jobbitAnalyticsQueue.push([name, props]);
 }
 
 export function initJobbitAnalytics(options: AnalyticsOptions = {}) {
   if (typeof window === "undefined" || typeof document === "undefined") {
-    return { track: () => undefined, pageview: () => undefined };
+    return { track: () => undefined, pageview: () => undefined, setRoute: () => undefined };
   }
 
-  const endpoint = options.endpoint ?? publicEnv("NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT");
+  const endpoint = (options.endpoint ?? publicEnv("NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT"))?.replace(/\/+$/, "");
   const siteId = options.siteId ?? publicEnv("NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID");
   const appId = options.appId ?? publicEnv("NEXT_PUBLIC_JOBBIT_APP_ID");
   if (!endpoint || !siteId) {
-    return { track: () => undefined, pageview: () => undefined };
-  }
-  const windowDnt = (window as Window & { doNotTrack?: string }).doNotTrack;
-  if (options.respectDnt !== false && (navigator.doNotTrack === "1" || windowDnt === "1")) {
-    return { track: () => undefined, pageview: () => undefined };
+    return { track: () => undefined, pageview: () => undefined, setRoute: () => undefined };
   }
 
-  const collectUrl = `${endpoint.replace(/\/+$/, "")}/c`;
-
-  function send(type: string, extra: Record<string, unknown> = {}) {
-    const params = new URLSearchParams(location.search);
-    const body = {
-      site_id: siteId,
-      app_id: appId,
-      session_id: getSessionId(),
-      visitor_id: getVisitorId(),
-      url: location.href,
-      path: location.pathname,
-      referrer: document.referrer,
-      title: document.title,
-      language: navigator.language,
-      screen: `${window.innerWidth}x${window.innerHeight}`,
-      timezone: timezone(),
-      utm_source: params.get("utm_source") ?? "",
-      utm_medium: params.get("utm_medium") ?? "",
-      utm_campaign: params.get("utm_campaign") ?? "",
-      utm_term: params.get("utm_term") ?? "",
-      utm_content: params.get("utm_content") ?? "",
-      type,
-      ...extra
-    };
-    const json = JSON.stringify(body);
-    if (navigator.sendBeacon) {
-      const ok = navigator.sendBeacon(collectUrl, new Blob([json], { type: "application/json" }));
-      if (ok) return;
-    }
-    void fetch(collectUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: json,
-      keepalive: true,
-      credentials: "omit"
-    }).catch(() => undefined);
-  }
-
-  function pageview() {
-    send("pageview");
+  let script = document.querySelector<HTMLScriptElement>(`script[${SCRIPT_ATTR}="true"]`);
+  if (!script) {
+    script = document.createElement("script");
+    script.defer = true;
+    script.src = `${endpoint}/t.js`;
+    script.setAttribute(SCRIPT_ATTR, "true");
+    script.setAttribute("data-site", siteId);
+    script.setAttribute("data-endpoint", `${endpoint}/c`);
+    if (appId) script.setAttribute("data-app", appId);
+    if (options.respectDnt === false) script.setAttribute("data-respect-dnt", "false");
+    script.addEventListener("load", flushQueue, { once: true });
+    document.head.appendChild(script);
+  } else {
+    flushQueue();
   }
 
   function track(event: string | TrackEventOptions, props?: Record<string, unknown>) {
     if (typeof event === "string") {
-      send("event", { event_name: event, props: props ?? null });
+      queueOrTrack(event, props);
     } else if (event.name) {
-      send("event", { event_name: event.name, props: event.props ?? null });
+      queueOrTrack(event.name, event.props);
     }
   }
 
-  pageview();
-  return { track, pageview };
+  function pageview() {
+    track("pageview");
+  }
+
+  function setRoute(route: string) {
+    if (window.jba?.setRoute) {
+      window.jba.setRoute(route);
+    }
+  }
+
+  return { track, pageview, setRoute };
 }

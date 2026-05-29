@@ -22,6 +22,18 @@ export interface SendMessageResult {
   provider_message_id?: string | null;
 }
 
+export interface MailMessageInfo extends SendMessageResult {
+  owner_id?: string;
+  app_id?: string | null;
+  to?: string[] | string;
+  subject?: string;
+  accepted?: number;
+  failed?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  error?: string | null;
+}
+
 export function createMailClient(options: MailClientOptions = {}) {
   const baseUrl = trimTrailingSlash(options.baseUrl ?? requireEnv("MAIL_BASE_URL", options.env));
   const apiKey = options.apiKey ?? requireEnv("MAIL_API_KEY", options.env);
@@ -42,6 +54,13 @@ export function createMailClient(options: MailClientOptions = {}) {
         })
       });
       return parseResponse<SendMessageResult>(response, "jobbit-mail");
+    },
+
+    async getMessage(messageId: string): Promise<MailMessageInfo> {
+      const response = await fetchImpl(`${baseUrl}/v1/messages/${encodeURIComponent(messageId)}`, {
+        headers: bearerHeaders(apiKey)
+      });
+      return parseResponse<MailMessageInfo>(response, "jobbit-mail");
     }
   };
 }

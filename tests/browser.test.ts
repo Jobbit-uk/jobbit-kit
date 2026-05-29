@@ -11,28 +11,32 @@ describe("browser helpers", () => {
   it("mounts a badge without iframe or wrapper tricks", () => {
     document.body.innerHTML = "";
     const node = mountJobbitBadge({ enabled: true, tier: "free", appUrl: "https://jobbit.uk" });
-    expect(node?.tagName).toBe("A");
+    expect(node?.tagName).toBe("DIV");
     expect(node?.dataset.jobbitBadge).toBe("true");
+    expect(node?.textContent).toContain("Made by");
+    expect(node?.textContent).toContain("jobbit");
+    expect(node?.textContent).toContain("Free host expires");
     expect(document.querySelector("iframe")).toBeNull();
   });
 
-  it("sends analytics pageview to /c", () => {
-    const fetch = vi.fn(async () => new Response("{}", { status: 202 })) as ReturnType<typeof vi.fn> &
-      ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>);
-    vi.stubGlobal("fetch", fetch);
-    Object.defineProperty(window.navigator, "sendBeacon", {
-      value: undefined,
-      configurable: true
-    });
+  it("loads the official analytics tracker once and queues events", () => {
+    document.head.innerHTML = "";
+    document.body.innerHTML = "";
 
-    initJobbitAnalytics({
+    const analytics = initJobbitAnalytics({
       endpoint: "https://analytics.jobbit.uk",
       siteId: "site_1",
       appId: "app_1",
       respectDnt: false
     });
+    analytics.track("signup", { plan: "free" });
+    initJobbitAnalytics({ endpoint: "https://analytics.jobbit.uk", siteId: "site_1" });
 
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(String(fetch.mock.calls[0]?.[0])).toBe("https://analytics.jobbit.uk/c");
+    const scripts = document.querySelectorAll<HTMLScriptElement>('script[data-jobbit-analytics="true"]');
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0].src).toBe("https://analytics.jobbit.uk/t.js");
+    expect(scripts[0].getAttribute("data-site")).toBe("site_1");
+    expect(scripts[0].getAttribute("data-app")).toBe("app_1");
+    expect(window.__jobbitAnalyticsQueue).toEqual([["signup", { plan: "free" }]]);
   });
 });
