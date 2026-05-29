@@ -1,0 +1,64 @@
+{
+  "name": "@jobbit/kit",
+  "version": "0.1.0",
+  "description": "Jobbit SDK for managed mail, OAuth, storage, AI, analytics, and app badge integrations.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server/mail": {
+      "types": "./dist/server/mail.d.ts",
+      "import": "./dist/server/mail.js"
+    },
+    "./server/oauth": {
+      "types": "./dist/server/oauth.d.ts",
+      "import": "./dist/server/oauth.js"
+    },
+    "./server/storage": {
+      "types": "./dist/server/storage.d.ts",
+      "import": "./dist/server/storage.js"
+    },
+    "./server/ai": {
+      "types": "./dist/server/ai.d.ts",
+      "import": "./dist/server/ai.js"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "import": "./dist/next.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepare": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@types/react": "^19.1.8",
+    "jsdom": "^26.1.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}
