@@ -181,6 +181,35 @@ analytics.track("signup_started", { source: "hero" });
 mountJobbitBadge();
 ```
 
+For plain HTML/static apps without a bundler, include the global browser bundle and expose the same public env on `window.__JOBBIT_ENV__`:
+
+```html
+<script>
+  window.__JOBBIT_ENV__ = {
+    NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT: "https://analytics.jobbit.uk",
+    NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID: "site_xxx",
+    NEXT_PUBLIC_JOBBIT_APP_ID: "app_xxx",
+    NEXT_PUBLIC_JOBBIT_APP_TIER: "free",
+    NEXT_PUBLIC_JOBBIT_BADGE_ENABLED: "true",
+    NEXT_PUBLIC_JOBBIT_FREE_HOST_EXPIRES_AT: "2026-06-05T12:00:00Z"
+  };
+</script>
+<script src="/jobbit-kit.browser.global.js"></script>
+<script>
+  const jobbit = JobbitKit.init();
+  jobbit.analytics?.track("app_loaded", { source: "static_html" });
+</script>
+```
+
+You can also auto-start it:
+
+```html
+<script>
+  window.JobbitKitConfig = { autoInit: true };
+</script>
+<script src="/jobbit-kit.browser.global.js"></script>
+```
+
 Analytics loads the official tracker script from `NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT + "/t.js"` and buffers custom `track()` calls until it is ready.
 
 The `free-host` badge is a top app banner styled like the old Jobbit proxy banner: Jobbit wordmark, free-host expiry copy, upgrade pills, and CTA. It only renders when `NEXT_PUBLIC_JOBBIT_BADGE_ENABLED=true` and `NEXT_PUBLIC_JOBBIT_APP_TIER=free`.

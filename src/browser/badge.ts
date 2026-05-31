@@ -1,3 +1,5 @@
+import { publicEnv } from "./env";
+
 export interface BadgeOptions {
   enabled?: boolean;
   tier?: string;
@@ -6,27 +8,6 @@ export interface BadgeOptions {
   expiresAt?: string;
   variant?: "free-host" | "compact" | string;
   mount?: HTMLElement;
-}
-
-function publicEnv(key: string): string | undefined {
-  const direct: Record<string, string | undefined> = {
-    NEXT_PUBLIC_JOBBIT_BADGE_ENABLED:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_BADGE_ENABLED : undefined,
-    NEXT_PUBLIC_JOBBIT_APP_TIER:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_TIER : undefined,
-    NEXT_PUBLIC_JOBBIT_APP_URL:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_URL : undefined,
-    NEXT_PUBLIC_JOBBIT_UPGRADE_URL:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_UPGRADE_URL : undefined,
-    NEXT_PUBLIC_JOBBIT_APP_ID:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_ID : undefined,
-    NEXT_PUBLIC_JOBBIT_BADGE_VARIANT:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_BADGE_VARIANT : undefined,
-    NEXT_PUBLIC_JOBBIT_FREE_HOST_EXPIRES_AT:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_FREE_HOST_EXPIRES_AT : undefined
-  };
-  const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  return direct[key] ?? env?.[key];
 }
 
 function isEnabled(value?: string): boolean {

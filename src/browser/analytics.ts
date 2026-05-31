@@ -1,3 +1,5 @@
+import { publicEnv } from "./env";
+
 export interface AnalyticsOptions {
   endpoint?: string;
   siteId?: string;
@@ -23,18 +25,6 @@ declare global {
 }
 
 const SCRIPT_ATTR = "data-jobbit-analytics";
-
-function publicEnv(key: string): string | undefined {
-  const direct: Record<string, string | undefined> = {
-    NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT : undefined,
-    NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID:
-      typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID : undefined,
-    NEXT_PUBLIC_JOBBIT_APP_ID: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_ID : undefined
-  };
-  const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  return direct[key] ?? env?.[key];
-}
 
 function flushQueue() {
   const queue = window.__jobbitAnalyticsQueue ?? [];
