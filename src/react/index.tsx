@@ -14,7 +14,7 @@ export function JobbitAnalytics(props: AnalyticsOptions): null {
 export function JobbitBadge(props: BadgeOptions): null {
   useEffect(() => {
     mountJobbitBadge(props);
-  }, [props.enabled, props.tier, props.appUrl, props.upgradeUrl, props.expiresAt, props.variant, props.mount]);
+  }, [props.enabled, props.tier, props.appUrl, props.expiresAt, props.variant, props.mount]);
   return null;
 }
 

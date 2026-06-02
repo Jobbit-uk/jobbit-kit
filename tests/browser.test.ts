@@ -51,6 +51,7 @@ describe("browser helpers", () => {
       NEXT_PUBLIC_JOBBIT_BADGE_ENABLED: "true",
       NEXT_PUBLIC_JOBBIT_APP_TIER: "free",
       NEXT_PUBLIC_JOBBIT_APP_ID: "app_static",
+      NEXT_PUBLIC_JOBBIT_UPGRADE_URL: "https://wrong.example/plans",
       NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT: "https://analytics.jobbit.uk",
       NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID: "site_static"
     };

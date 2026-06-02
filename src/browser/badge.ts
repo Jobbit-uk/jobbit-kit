@@ -7,7 +7,6 @@ export interface BadgeOptions {
   enabled?: boolean;
   tier?: string;
   appUrl?: string;
-  upgradeUrl?: string;
   expiresAt?: string;
   variant?: "free-host" | "compact" | string;
   mount?: HTMLElement;
@@ -322,10 +321,7 @@ export function mountJobbitBadge(options: BadgeOptions = {}): HTMLElement | null
   banner.dataset.variant = options.variant ?? publicEnv("NEXT_PUBLIC_JOBBIT_BADGE_VARIANT") ?? "free-host";
 
   const appId = publicEnv("NEXT_PUBLIC_JOBBIT_APP_ID");
-  const plansUrl =
-    options.upgradeUrl ??
-    publicEnv("NEXT_PUBLIC_JOBBIT_UPGRADE_URL") ??
-    (appId ? `https://jobbit.uk/deploys/${encodeURIComponent(appId)}/plans` : "https://jobbit.uk");
+  const plansUrl = appId ? `https://jobbit.uk/deploys/${encodeURIComponent(appId)}/plans` : "https://jobbit.uk";
   const expiresAt = options.expiresAt ?? publicEnv("NEXT_PUBLIC_JOBBIT_FREE_HOST_EXPIRES_AT");
   banner.innerHTML = `
     <canvas aria-hidden="true"></canvas>

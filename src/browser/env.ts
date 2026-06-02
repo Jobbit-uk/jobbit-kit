@@ -11,8 +11,6 @@ const knownBuildEnv: JobbitPublicEnv = {
   NEXT_PUBLIC_JOBBIT_APP_TIER:
     typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_TIER : undefined,
   NEXT_PUBLIC_JOBBIT_APP_URL: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_APP_URL : undefined,
-  NEXT_PUBLIC_JOBBIT_UPGRADE_URL:
-    typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_UPGRADE_URL : undefined,
   NEXT_PUBLIC_JOBBIT_BADGE_VARIANT:
     typeof process !== "undefined" ? process.env.NEXT_PUBLIC_JOBBIT_BADGE_VARIANT : undefined,
   NEXT_PUBLIC_JOBBIT_FREE_HOST_EXPIRES_AT:
