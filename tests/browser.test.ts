@@ -28,6 +28,21 @@ describe("browser helpers", () => {
     expect(document.querySelector("iframe")).toBeNull();
   });
 
+  it("sets a global top offset for fixed app headers", () => {
+    const header = document.createElement("header");
+    header.style.position = "fixed";
+    header.style.top = "0px";
+    document.body.appendChild(header);
+
+    const node = mountJobbitBadge({ enabled: true, tier: "free" });
+
+    expect(node?.dataset.jobbitBadge).toBe("true");
+    expect(document.documentElement.dataset.jobbitBadgeMounted).toBe("true");
+    expect(document.body.dataset.jobbitBadgeMounted).toBe("true");
+    expect(document.documentElement.style.getPropertyValue("--jobbit-badge-offset")).toBe("64px");
+    expect(header.dataset.jobbitOffsetTop).toBe("true");
+  });
+
   it("loads the official analytics tracker once and queues events", () => {
     const analytics = initJobbitAnalytics({
       endpoint: "https://analytics.jobbit.uk",
