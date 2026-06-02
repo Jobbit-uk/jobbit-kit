@@ -21,8 +21,10 @@ describe("browser helpers", () => {
     expect(node?.tagName).toBe("DIV");
     expect(node?.dataset.jobbitBadge).toBe("true");
     expect(node?.textContent).toContain("Made by");
-    expect(node?.textContent).toContain("jobbit");
     expect(node?.textContent).toContain("Free host expires");
+    expect(node?.querySelector<HTMLElement>(".jb-logo")?.getAttribute("aria-label")).toBe("Jobbit");
+    expect(node?.querySelector<HTMLElement>(".jb-wordmark")).toBeNull();
+    expect(node?.querySelector<HTMLAnchorElement>(".jb-upgrade")?.textContent).toContain("Upgrade");
     expect(document.querySelector("iframe")).toBeNull();
   });
 
