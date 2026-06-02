@@ -8,6 +8,7 @@ describe("browser helpers", () => {
     delete window.__JOBBIT_ENV__;
     delete window.__jobbitAnalyticsQueue;
     delete window.jba;
+    delete document.documentElement.dataset.jobbitBadgeDismissed;
   });
 
   it("shows badge only for enabled free apps", () => {
@@ -20,7 +21,7 @@ describe("browser helpers", () => {
     const node = mountJobbitBadge({ enabled: true, tier: "free", appUrl: "https://jobbit.uk" });
     expect(node?.tagName).toBe("DIV");
     expect(node?.dataset.jobbitBadge).toBe("true");
-    expect(node?.textContent).toContain("Made by");
+    expect(node?.textContent).toContain("Hosted by");
     expect(node?.textContent).toContain("Free host expires");
     expect(node?.querySelector<HTMLElement>(".jb-logo")?.getAttribute("aria-label")).toBe("Jobbit");
     expect(node?.querySelector<HTMLElement>(".jb-wordmark")).toBeNull();
@@ -28,7 +29,7 @@ describe("browser helpers", () => {
     expect(document.querySelector("iframe")).toBeNull();
   });
 
-  it("sets a global top offset for fixed app headers", () => {
+  it("floats without mutating fixed app headers", () => {
     const header = document.createElement("header");
     header.style.position = "fixed";
     header.style.top = "0px";
@@ -37,10 +38,24 @@ describe("browser helpers", () => {
     const node = mountJobbitBadge({ enabled: true, tier: "free" });
 
     expect(node?.dataset.jobbitBadge).toBe("true");
-    expect(document.documentElement.dataset.jobbitBadgeMounted).toBe("true");
-    expect(document.body.dataset.jobbitBadgeMounted).toBe("true");
-    expect(document.documentElement.style.getPropertyValue("--jobbit-badge-offset")).toBe("64px");
-    expect(header.dataset.jobbitOffsetTop).toBe("true");
+    expect(document.documentElement.dataset.jobbitBadgeMounted).toBeUndefined();
+    expect(document.body.dataset.jobbitBadgeMounted).toBeUndefined();
+    expect(document.documentElement.style.getPropertyValue("--jobbit-badge-offset")).toBe("");
+    expect(header.dataset.jobbitOffsetTop).toBeUndefined();
+  });
+
+  it("opens details and hides for the current session", () => {
+    const node = mountJobbitBadge({ enabled: true, tier: "free" });
+    const chip = node?.querySelector<HTMLButtonElement>(".jb-chip");
+    const dismiss = node?.querySelector<HTMLButtonElement>(".jb-dismiss");
+
+    chip?.click();
+    expect(node?.dataset.open).toBe("true");
+    expect(chip?.getAttribute("aria-expanded")).toBe("true");
+
+    dismiss?.click();
+    expect(document.querySelector("[data-jobbit-badge]")).toBeNull();
+    expect(mountJobbitBadge({ enabled: true, tier: "free" })).toBeNull();
   });
 
   it("loads the official analytics tracker once and queues events", () => {
