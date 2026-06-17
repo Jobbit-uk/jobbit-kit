@@ -23,8 +23,33 @@ declare global {
   }
 }
 
+let triedRuntimeEnvLoad = false;
+
+function loadRuntimeWindowEnv(): JobbitPublicEnv | undefined {
+  if (typeof window === "undefined") return undefined;
+  if (window.__JOBBIT_ENV__) return window.__JOBBIT_ENV__;
+  if (triedRuntimeEnvLoad || typeof XMLHttpRequest === "undefined") return undefined;
+
+  triedRuntimeEnvLoad = true;
+  try {
+    const request = new XMLHttpRequest();
+    request.open("GET", "/__jobbit/env.json", false);
+    request.send(null);
+    if (request.status >= 200 && request.status < 300 && request.responseText) {
+      window.__JOBBIT_ENV__ = JSON.parse(request.responseText) as JobbitPublicEnv;
+    }
+  } catch {
+    // Runtime env is best-effort; build-time env remains a fallback.
+  }
+  return window.__JOBBIT_ENV__;
+}
+
+export function __resetJobbitRuntimeEnvForTests() {
+  triedRuntimeEnvLoad = false;
+}
+
 export function publicEnv(key: string): string | undefined {
   const runtimeEnv = (globalThis as unknown as { process?: { env?: JobbitPublicEnv } }).process?.env;
-  const windowEnv = typeof window !== "undefined" ? window.__JOBBIT_ENV__ : undefined;
-  return knownBuildEnv[key] ?? runtimeEnv?.[key] ?? windowEnv?.[key];
+  const windowEnv = loadRuntimeWindowEnv();
+  return windowEnv?.[key] ?? knownBuildEnv[key] ?? runtimeEnv?.[key];
 }

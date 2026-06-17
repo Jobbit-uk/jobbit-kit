@@ -1,5 +1,21 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { initJobbitAnalytics, mountJobbitBadge, shouldShowJobbitBadge } from "../src/browser";
+import { __resetJobbitRuntimeEnvForTests } from "../src/browser/env";
+
+const OriginalXMLHttpRequest = window.XMLHttpRequest;
+
+class EmptyRuntimeEnvXMLHttpRequest {
+  status = 404;
+  responseText = "";
+
+  open() {
+    // no-op
+  }
+
+  send() {
+    // no-op
+  }
+}
 
 describe("browser helpers", () => {
   beforeEach(() => {
@@ -9,6 +25,8 @@ describe("browser helpers", () => {
     delete window.__jobbitAnalyticsQueue;
     delete window.jba;
     delete document.documentElement.dataset.jobbitBadgeDismissed;
+    __resetJobbitRuntimeEnvForTests();
+    window.XMLHttpRequest = EmptyRuntimeEnvXMLHttpRequest as unknown as typeof XMLHttpRequest;
   });
 
   it("shows badge only for enabled free apps", () => {
@@ -99,5 +117,40 @@ describe("browser helpers", () => {
       "https://analytics.jobbit.uk/t.js"
     );
     expect(window.__jobbitAnalyticsQueue).toEqual([["pageview", undefined]]);
+  });
+
+  it("loads browser env from the JBC runtime env endpoint", () => {
+    class MockXMLHttpRequest {
+      status = 200;
+      responseText = JSON.stringify({
+        NEXT_PUBLIC_JOBBIT_ANALYTICS_ENDPOINT: "https://analytics.jobbit.uk",
+        NEXT_PUBLIC_JOBBIT_ANALYTICS_SITE_ID: "site_runtime",
+        NEXT_PUBLIC_JOBBIT_APP_ID: "app_runtime"
+      });
+      requestedUrl = "";
+
+      open(_method: string, url: string) {
+        this.requestedUrl = url;
+      }
+
+      send() {
+        expect(this.requestedUrl).toBe("/__jobbit/env.json");
+      }
+    }
+
+    window.XMLHttpRequest = MockXMLHttpRequest as unknown as typeof XMLHttpRequest;
+    try {
+      const analytics = initJobbitAnalytics();
+      analytics.pageview();
+
+      const script = document.querySelector<HTMLScriptElement>('script[data-jobbit-analytics="true"]');
+      expect(script?.src).toBe("https://analytics.jobbit.uk/t.js");
+      expect(script?.getAttribute("data-site")).toBe("site_runtime");
+      expect(script?.getAttribute("data-app")).toBe("app_runtime");
+      expect(window.__JOBBIT_ENV__?.NEXT_PUBLIC_JOBBIT_APP_ID).toBe("app_runtime");
+      expect(window.__jobbitAnalyticsQueue).toEqual([["pageview", undefined]]);
+    } finally {
+      window.XMLHttpRequest = OriginalXMLHttpRequest;
+    }
   });
 });
