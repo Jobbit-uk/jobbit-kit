@@ -1,14 +1,16 @@
-import { requireEnv, trimTrailingSlash, type EnvSource } from "./env";
+import { readEnv, requireEnv, trimTrailingSlash, type EnvSource } from "./env";
 import { bearerHeaders, parseResponse, type FetchLike } from "./http";
 
 export interface MailClientOptions {
   baseUrl?: string;
   apiKey?: string;
+  from?: string;
   env?: EnvSource;
   fetch?: FetchLike;
 }
 
 export interface SendMessageInput {
+  from?: string;
   to: string | string[];
   subject: string;
   text?: string;
@@ -37,6 +39,7 @@ export interface MailMessageInfo extends SendMessageResult {
 export function createMailClient(options: MailClientOptions = {}) {
   const baseUrl = trimTrailingSlash(options.baseUrl ?? requireEnv("MAIL_BASE_URL", options.env));
   const apiKey = options.apiKey ?? requireEnv("MAIL_API_KEY", options.env);
+  const defaultFrom = options.from ?? readEnv("MAIL_FROM", options.env);
   const fetchImpl = options.fetch ?? fetch;
 
   return {
@@ -46,6 +49,7 @@ export function createMailClient(options: MailClientOptions = {}) {
         method: "POST",
         headers,
         body: JSON.stringify({
+          ...(input.from || defaultFrom ? { from: input.from ?? defaultFrom } : {}),
           to: input.to,
           subject: input.subject,
           text: input.text,

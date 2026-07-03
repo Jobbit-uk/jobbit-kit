@@ -32,6 +32,47 @@ describe("server clients", () => {
     expect(String(fetch.mock.calls[1][0])).toBe("https://mail.jobbit.uk/v1/messages/msg_1");
   });
 
+  it("sends mail from managed MAIL_FROM when available", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ id: "msg_1", status: "sent" })) as FetchMock;
+    const client = createMailClient({
+      baseUrl: "https://mail.jobbit.uk",
+      apiKey: "jbmail_x",
+      env: { MAIL_FROM: "Onegate <noreply@onegate.jobbit.uk>" },
+      fetch
+    });
+
+    await client.sendMessage({ to: "a@example.com", subject: "Hi", text: "Hello" });
+
+    const [, init] = fetch.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.from).toBe("Onegate <noreply@onegate.jobbit.uk>");
+  });
+
+  it("lets an explicit mail from override managed MAIL_FROM", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ id: "msg_1", status: "sent" })) as FetchMock;
+    const client = createMailClient({
+      baseUrl: "https://mail.jobbit.uk",
+      apiKey: "jbmail_x",
+      env: { MAIL_FROM: "Onegate <noreply@onegate.jobbit.uk>" },
+      fetch
+    });
+
+    await client.sendMessage({
+      from: "Support <support@onegate.jobbit.uk>",
+      to: "a@example.com",
+      subject: "Hi",
+      text: "Hello"
+    });
+
+    const [, init] = fetch.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.from).toBe("Support <support@onegate.jobbit.uk>");
+  });
+
   it("starts and exchanges oauth login", async () => {
     const fetch = vi
       .fn()

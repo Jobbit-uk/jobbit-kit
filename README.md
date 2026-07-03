@@ -86,7 +86,7 @@ const sent = await mail.sendMessage({
 const status = await mail.getMessage(sent.id);
 ```
 
-Do not pass `from`. Jobbit Mail resolves the correct sender from managed domain settings.
+By default, Jobbit Kit sends the managed `MAIL_FROM` value injected by JBC. Pass `from` only when you need to override the managed sender for a verified app domain.
 
 ## Storage
 
